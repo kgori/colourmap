@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+<script>
+var width = 960,
+    height = 1160;
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var projection = d3.geo.albers()
+    .center([0, 55.4])
+    .rotate([4.4, 0])
+    .parallels([50, 60])
+    .scale(4000)
+    .translate([width / 2, height / 2]);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+var fill = d3.scale.log()
+    .domain([10, 500])
+    .range(["brown", "steelblue"]);
+
+d3.json("json/uk_constituencies.json", function(error, uk) {
+  if (error) return console.error(error);
+
+  // extract constituency boundaries from "wpc" annotation
+  var constituencies = topojson.feature(uk, uk.objects.wpc);
+
+  // draw constituency boundaries
+  svg.append("path")
+      .datum(constituencies)
+      .attr("d", path);
+
+  svg.selectAll(".constituencies")
+    .data(constituencies.features)
+    .enter().append("path")
+    .attr("class", function(d) { return "constituency " + d.id; })
+    .attr("d", path)
+    .style("fill", function(d) { return fill(path.area(d)); }) // dummy value based on area
+
+    .on("mouseover", function(d) {
+        var xPosition = d3.mouse(this)[0];
+        var yPosition = d3.mouse(this)[1] - 30;
+
+        svg.append("text")
+            .attr("id", "tooltip")
+            .attr("x", xPosition)
+            .attr("y", yPosition)
+            .attr("text-anchor", "middle")
+            .attr("font-family", "sans-serif")
+            .attr("font-size", "11px")
+            .attr("font-weight", "bold")
+            .attr("fill", "black")
+            .text(d.properties.PCON13NM);
+
+        d3.select(this)
+            .style("fill", "#509e2f");
+    })
+    .on("mouseout", function(d) {
+        d3.select("#tooltip").remove();
+
+        d3.select(this)
+            .transition()
+            .duration(150)
+            .style("fill", function(d) { return fill(path.area(d)); })
+        });
+    });
+
+
+</script>
+</body>
+</html>
